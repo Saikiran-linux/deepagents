@@ -17,6 +17,17 @@ a **planning tool**, **sub agents**, access to a **file system**, and a **detail
 pip install deepagents
 ```
 
+If you want to configure API keys via a .env file, create a `.env` in your project root and add:
+
+```
+NVIDIA_API_KEY=your_key_here
+# Optionally
+NVAI_API_KEY=your_key_here
+NVIDIA_API_TOKEN=your_key_here
+```
+
+The library auto-loads `.env` using `python-dotenv`.
+
 ## Usage
 
 (To run the example below, will need to `pip install tavily-python`)

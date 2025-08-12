@@ -1,3 +1,6 @@
 deepagents
 langgraph-cli[inmem]
+langchain_openai
 tavily-python
+python-dotenv
+rich

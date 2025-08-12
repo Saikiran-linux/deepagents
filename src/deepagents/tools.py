@@ -3,6 +3,7 @@ from langgraph.types import Command
 from langchain_core.messages import ToolMessage
 from typing import Annotated
 from langgraph.prebuilt import InjectedState
+from pathlib import Path
 
 from deepagents.prompts import (
     WRITE_TODOS_DESCRIPTION,
@@ -40,11 +41,21 @@ def read_file(
 ) -> str:
     """Read file."""
     mock_filesystem = state.get("files", {})
-    if file_path not in mock_filesystem:
-        return f"Error: File '{file_path}' not found"
-
-    # Get file content
-    content = mock_filesystem[file_path]
+    content = None
+    if file_path in mock_filesystem:
+        content = mock_filesystem[file_path]
+    else:
+        # Fallback: try reading from disk
+        try:
+            path_obj = Path(file_path)
+            if not path_obj.is_absolute():
+                path_obj = Path.cwd() / file_path
+            if path_obj.exists():
+                content = path_obj.read_text(encoding="utf-8", errors="ignore")
+            else:
+                return f"Error: File '{file_path}' not found"
+        except Exception:
+            return f"Error: File '{file_path}' not found"
 
     # Handle empty file
     if not content or content.strip() == "":
@@ -77,15 +88,31 @@ def read_file(
     return "\n".join(result_lines)
 
 
+@tool(description="Write content to a file in the agent's virtual filesystem and persist it to disk when possible.")
 def write_file(
     file_path: str,
     content: str,
     state: Annotated[DeepAgentState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId],
 ) -> Command:
-    """Write to a file."""
+    """Write to a file.
+
+    This updates the agent's in-memory files AND attempts to persist the file to disk.
+    If the provided path is relative, it will be saved relative to the current working directory.
+    """
     files = state.get("files", {})
     files[file_path] = content
+
+    # Best-effort: also persist to disk so end users can find the files
+    try:
+        path_obj = Path(file_path)
+        if not path_obj.is_absolute():
+            path_obj = Path.cwd() / file_path
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        path_obj.write_text(content, encoding="utf-8")
+    except Exception:
+        # Do not fail the tool on disk write errors; still keep in-memory state
+        pass
     return Command(
         update={
             "files": files,
@@ -139,6 +166,15 @@ def edit_file(
 
     # Update the mock filesystem
     mock_filesystem[file_path] = new_content
+    # Best-effort: persist to disk as well
+    try:
+        path_obj = Path(file_path)
+        if not path_obj.is_absolute():
+            path_obj = Path.cwd() / file_path
+        path_obj.parent.mkdir(parents=True, exist_ok=True)
+        path_obj.write_text(new_content, encoding="utf-8")
+    except Exception:
+        pass
     return Command(
         update={
             "files": mock_filesystem,

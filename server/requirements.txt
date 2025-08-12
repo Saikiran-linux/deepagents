@@ -1,0 +1,12 @@
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+python-dotenv>=1.0.1
+# deepagents runtime deps
+# Ensure the project is installed in editable mode for local imports
+# pip install -e ..
+pydantic>=2.7,<3
+pydantic-core>=2.20,<3
+tavily-python>=0.4.0
+
+
+

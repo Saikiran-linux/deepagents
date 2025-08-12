@@ -135,7 +135,8 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+# Intentionally allow committing .env for this project (remove the ignore line)
+# (Be cautious: this may expose secrets if pushed to a public repo)
 .envrc
 .venv
 env/
